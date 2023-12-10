@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  minecraft-bedrock:
+    image: itzg/minecraft-bedrock-server:latest
+    restart: unless-stopped
+    environment:
+      DEFAULT_PLAYER_PERMISSION_LEVEL: "operator"
+      VERSION: "LATEST"
+      SERVER_PORT: "19132"
+      SERVER_NAME: "FroebCraft-Bedrock-Mountain"
+      LEVEL_SEED: "2033516050"
+      GAMEMODE: "0"
+      DIFFICULTY: "2"
+      ALLOW_CHEATS: "true"
+      MAX_MEMORY: "3G"
+      EULA: "true"
+      GID: "100"
+      UID: "1036"
+    volumes:
+      - minecraft_bedrock_data:/data
+    ports:
+      - "25565:25565"
+    networks:
+      - homelab
+
+  minecraft-java:
+    image: itzg/minecraft-server:latest
+    tty: true
+    stdin_open: true
+    restart: unless-stopped
+    environment:
+      TYPE: "PAPER"
+      EULA: "true"
+      SERVER_NAME: "FroebCraft-Java-Mountain"
+      SEED: "2033516050"
+      MAX_MEMORY: "3G"
+      VIEW_DISTANCE: "10"
+      GID: "100"
+      UID: "1036"
+    volumes:
+      - minecraft_java_data:/data
+    ports:
+      - "25566:25565"
+    networks:
+      - homelab
+
+  omada-controller:
+    container_name: omada-controller
+    image: mbentley/omada-controller:5.13
+    restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 4096
+        hard: 8192
+    stop_grace_period: 60s
+    network_mode: host
+    environment:
+      USERNAME: "stephenfroeber"
+      PGROUP: "omada"
+      PUID: "508"
+      PGID: "508"
+      MANAGE_HTTP_PORT: "8088"
+      MANAGE_HTTPS_PORT: "8043"
+      PORTAL_HTTP_PORT: "8088"
+      PORTAL_HTTPS_PORT: "8843"
+      PORT_APP_DISCOVERY: "27001"
+      PORT_ADOPT_V1: "29812"
+      PORT_UPGRADE_V1: "29813"
+      PORT_MANAGER_V1: "29811"
+      PORT_MANAGER_V2: "29814"
+      PORT_DISCOVERY: "29810"
+      PORT_TRANSFER_V2: "29815"
+      PORT_RTTY: "29816"
+      SHOW_SERVER_LOGS: "true"
+      SHOW_MONGODB_LOGS: "false"
+      SSL_CERT_NAME: "tls.crt"
+      SSL_KEY_NAME: "tls.key"
+      TZ: "America/Chicago"
+    volumes:
+      - omada-data:/opt/tplink/EAPController/data
+      - omada-logs:/opt/tplink/EAPController/logs
+    ports:
+      - "8088:8088"
+      - "8043:8043"
+      - "27017:27017"
+      - "29810:29810/udp"
+      - "29811:29811"
+      - "29812:29812"
+      - "29813:29813"
+    networks:
+      - homelab
+
+duckdns:
+  image: lscr.io/linuxserver/duckdns:latest
+  container_name: duckdns
+  network_mode: host
+  environment:
+    - PUID=1000
+    - PGID=1000
+    - TZ=America/Chicago
+    - SUBDOMAINS=srfaudio
+    - TOKEN=d40411ae-f0f6-4029-835d-8fedd66ad91e
+    - UPDATE_IP=ipv4
+    - LOG_FILE=false
+  volumes:
+    - duckdns_config:/config
+  restart: unless-stopped
+  networks:
+    - homelab
+
+volumes:
+  minecraft_bedrock_data:
+  minecraft_java_data:
+  omada_data:
+  omada_logs:
+  duckdns_config:
+
+
+networks:
+  homelab:
+    driver: bridge
