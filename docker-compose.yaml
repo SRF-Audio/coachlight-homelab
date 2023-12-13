@@ -1,28 +1,28 @@
 version: '3.8'
 
 services:
-  minecraft-bedrock:
-    image: itzg/minecraft-bedrock-server:latest
-    restart: unless-stopped
-    environment:
-      DEFAULT_PLAYER_PERMISSION_LEVEL: "operator"
-      VERSION: "LATEST"
-      SERVER_PORT: "19132"
-      SERVER_NAME: "FroebCraft-Bedrock-Mountain"
-      LEVEL_SEED: "2033516050"
-      GAMEMODE: "0"
-      DIFFICULTY: "2"
-      ALLOW_CHEATS: "true"
-      MAX_MEMORY: "3G"
-      EULA: "true"
-      GID: "100"
-      UID: "1036"
-    volumes:
-      - minecraft_bedrock_data:/data
-    ports:
-      - "25565:25565"
-    networks:
-      - homelab
+  # minecraft-bedrock:
+  #   image: itzg/minecraft-bedrock-server:latest
+  #   restart: unless-stopped
+  #   environment:
+  #     DEFAULT_PLAYER_PERMISSION_LEVEL: "operator"
+  #     VERSION: "LATEST"
+  #     SERVER_PORT: "19132"
+  #     SERVER_NAME: "FroebCraft-Bedrock-Mountain"
+  #     LEVEL_SEED: "2033516050"
+  #     GAMEMODE: "0"
+  #     DIFFICULTY: "2"
+  #     ALLOW_CHEATS: "true"
+  #     MAX_MEMORY: "3G"
+  #     EULA: "true"
+  #     GID: "100"
+  #     UID: "1036"
+  #   volumes:
+  #     - minecraft_bedrock_data:/data
+  #   ports:
+  #     - "25565:25565"
+  #   networks:
+  #     - homelab
 
   minecraft-java:
     image: itzg/minecraft-server:latest
@@ -108,7 +108,7 @@ services:
       - homelab
 
 volumes:
-  minecraft_bedrock_data:
+  # minecraft_bedrock_data:
   minecraft_java_data:
   omada-data:
   omada-logs:
