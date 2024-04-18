@@ -1,0 +1,86 @@
+- name: Create Debian VM on Proxmox node
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Create VM
+      community.general.proxmox_kvm:
+        api_user: root@pam
+        api_token_id: your_api_token_id
+        api_token_secret: your_api_token_secret
+        api_host: your_proxmox_host
+        validate_certs: no
+        node: macmini2
+        vmid: your_vmid
+        name: your_vm_name
+        cpu: cores=2
+        memory: 6144
+        disk: 100
+        storage: local-lvm
+        net: '{"net0":"virtio,bridge=vmbr0"}'
+        iso: 'local:iso/debian.iso'
+        ostype: l26
+        bootdisk: virtio0
+        boot: order=virtio0;ide2;net0
+
+- name: Configure VM post-installation
+  hosts: your_vm_host
+  become: yes
+  tasks:
+    - name: Wait for SSH to come up
+      wait_for:
+        port: 22
+        host: '{{ ansible_host }}'
+        timeout: 300
+        delay: 10
+
+---
+- name: Configure VM post-installation
+  hosts: your_vm_host
+  become: yes
+  tasks:
+    - name: Update all packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Install required system packages
+      apt:
+        name: "{{ packages }}"
+      vars:
+        packages:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg-agent
+          - software-properties-common
+
+    - name: Add Docker’s official GPG key
+      apt_key:
+        url: https://download.docker.com/linux/debian/gpg
+        state: present
+
+    - name: Set up the stable repository
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/debian buster stable
+        state: present
+
+    - name: Install Docker Engine
+      apt:
+        name: docker-ce
+        state: latest
+        update_cache: yes
+
+    - name: Add user to the Docker group
+      user:
+        name: "{{ user }}"
+        group: docker
+        append: yes
+      vars:
+        user: coachlight-homelab
+
+    - name: Ensure Docker service is running and enabled
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
