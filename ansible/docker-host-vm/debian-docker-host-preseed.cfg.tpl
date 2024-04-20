@@ -21,8 +21,8 @@ d-i mirror/http/proxy string
 
 ### Account setup
 # Root password (either set a password or use passwordless sudo below).
-d-i passwd/root-password password {{ op://HomeLab/docker-host SSH key/password }}
-d-i passwd/root-password-again password {{ op://HomeLab/docker-host SSH key/password }}
+d-i passwd/root-password password {{ op://HomeLab/coachlight-homelab SSH key/user credentials/password }}
+d-i passwd/root-password-again password {{ op://HomeLab/coachlight-homelab SSH key/user credentials/password }}
 # To create a normal user account.
 d-i passwd/user-fullname string Coachlight HomeLab
 d-i passwd/username string coachlight-homelab
@@ -30,7 +30,7 @@ d-i passwd/user-password password "op://HomeLab/coachlight-homelab SSH key/user 
 d-i passwd/user-password-again password "op://HomeLab/coachlight-homelab SSH key/user credentials/password"
 d-i user-setup/allow-password-weak boolean false
 d-i user-setup/encrypt-home boolean false
-d-i preseed/late_command string in-target sh -c 'mkdir -p /home/coachlight-homelab/.ssh && echo '"op://HomeLab/coachlight-homelab SSH key/public key"' > /home/coachlight-homelab/.ssh/authorized_keys'
+d-i preseed/late_command string in-target sh -c 'mkdir -p /home/coachlight-homelab/.ssh && echo "{{ op://HomeLab/coachlight-homelab SSH key/public key }}" > /home/coachlight-homelab/.ssh/authorized_keys'
 
 
 ### Clock and time zone setup

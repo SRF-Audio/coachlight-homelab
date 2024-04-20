@@ -1,15 +1,14 @@
 #!/bin/bash
 
-# Define base directory and ensure output directory exists
-BASE_DIR="~/GitHub/coachlight-homelab/ansible/docker-host-vm"
+# Define the base directory relative to the current directory
+BASE_DIR=$(pwd)
+
+# Ensure the outputs directory exists
 mkdir -p "$BASE_DIR/outputs"
 
 # Define paths to your template files and the output files
 PRESEED_TEMPLATE="$BASE_DIR/debian-docker-host-preseed.cfg.tpl"
 PRESEED_OUTPUT="$BASE_DIR/outputs/debian-docker-host-preseed.cfg"
-
-PLAYBOOK_TEMPLATE="$BASE_DIR/proxmox-docker-host.yml.tpl"
-PLAYBOOK_OUTPUT="$BASE_DIR/outputs/proxmox-docker-host.yml"
 
 # Check if 1Password CLI is installed
 if ! command -v op &>/dev/null; then
@@ -33,14 +32,12 @@ else
     echo "Debian preseed configuration is ready."
 fi
 
-# Inject secrets into the Ansible playbook template
-echo "Injecting secrets into Ansible playbook template..."
-op inject -i "$PLAYBOOK_TEMPLATE" -o "$PLAYBOOK_OUTPUT"
-if [ $? -ne 0 ]; then
-    echo "Failed to inject secrets into the Ansible playbook."
-    exit 1
-else
-    echo "Ansible playbook is ready."
-fi
+# Retrieve playbook secrets and export them
+echo "Retrieving secrets..."
+export PROXMOX_API_TOKEN_SECRET=$(op read "op://HomeLab/ProxMox Server/API Tokens/2cnt647gewnu2urx6di5grvk7e")
+export PROXMOX_HOST=$(op read "op://HomeLab/ProxMox Server/macmini1")
+export MAC_ADDRESS=$(op read "op://HomeLab/coachlight-homelab SSH key/docker host vm/mac address")
 
-echo "All files have been successfully prepared with secrets."
+ansible-playbook ./proxmox-docker-host.yml --extra-vars "proxmox_host=$PROXMOX_HOST proxmox_api_token=$PROXMOX_API_TOKEN_SECRET mac_address=$MAC_ADDRESS"
+
+rm -rf ./outputs

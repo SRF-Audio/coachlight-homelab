@@ -2,11 +2,12 @@
   hosts: localhost
   gather_facts: no
   vars:
-    proxmox_api_token_id: "{{ lookup('env', 'PROXMOX_API_TOKEN_ID') }}"
+    proxmox_api_token_id: root@pam!ansible-token
+    vars:
     proxmox_api_token_secret: "{{ lookup('env', 'PROXMOX_API_TOKEN_SECRET') }}"
     proxmox_host: "{{ lookup('env', 'PROXMOX_HOST') }}"
-    mac_address: "{{ op://HomeLab/coachlight-homelab SSH key/docker host vm/mac address }}"
-    vm_ip: "{{ op://<vault>/<entry>/vm_ip }}"
+    mac_address: "{{ lookup('env', 'MAC_ADDRESS') }}"
+    vm_ip: "192.168.226.100"
     user: coachlight-homelab
   tasks:
     - name: Create Debian VM
