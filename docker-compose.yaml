@@ -1,47 +1,21 @@
 services:
-  # minecraft-bedrock:
-  #   image: itzg/minecraft-bedrock-server:latest
-  #   restart: unless-stopped
-  #   environment:
-  #     DEFAULT_PLAYER_PERMISSION_LEVEL: "operator"
-  #     VERSION: "LATEST"
-  #     SERVER_PORT: "19132"
-  #     SERVER_NAME: "FroebCraft-Bedrock-Mountain"
-  #     LEVEL_SEED: "2033516050"
-  #     GAMEMODE: "0"
-  #     DIFFICULTY: "2"
-  #     ALLOW_CHEATS: "true"
-  #     MAX_MEMORY: "3G"
-  #     EULA: "true"
-  #     GID: "100"
-  #     UID: "1036"
-  #   volumes:
-  #     - minecraft_bedrock_data:/data
-  #   ports:
-  #     - "25565:25565"
-  #   networks:
-  #     - homelab
-
-  minecraft-java:
-    image: itzg/minecraft-server:latest
-    tty: true
-    stdin_open: true
-    restart: unless-stopped
-    environment:
-      TYPE: "PAPER"
-      EULA: "true"
-      SERVER_NAME: "FroebCraft-Java-Mountain"
-      SEED: "2033516050"
-      MAX_MEMORY: "3G"
-      VIEW_DISTANCE: "10"
-      GID: "100"
-      UID: "1036"
-    volumes:
-      - minecraft_java_data:/data
+  heimdall:
+    image: linuxserver/heimdall
+    container_name: heimdall
     ports:
-      - "25566:25565"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - heimdall-config:/config
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+    restart: unless-stopped
     networks:
-      - homelab
+      homelab:
+        ipv4_address: 192.168.226.101
+    mac_address: 02:42:ac:11:00:02
 
   omada-controller:
     container_name: omada-controller
@@ -86,7 +60,9 @@ services:
       - "29812:29812"
       - "29813:29813"
     networks:
-      - homelab
+      homelab:
+        ipv4_address: 192.168.226.102
+    mac_address: 02:42:ac:11:00:05
 
   duckdns:
     image: lscr.io/linuxserver/duckdns:latest
@@ -103,15 +79,95 @@ services:
       - duckdns-config:/config
     restart: unless-stopped
     networks:
-      - homelab
+      homelab:
+        ipv4_address: 192.168.226.103
+    mac_address: 02:42:ac:11:00:06
 
-volumes:
-  # minecraft_bedrock_data:
-  minecraft_java_data:
-  omada-data:
-  omada-logs:
-  duckdns-config:
+  minecraft-bedrock:
+    image: itzg/minecraft-bedrock-server:latest
+    restart: unless-stopped
+    environment:
+      DEFAULT_PLAYER_PERMISSION_LEVEL: "operator"
+      VERSION: "LATEST"
+      SERVER_PORT: "19132"
+      SERVER_NAME: "FroebCraft-Bedrock-Mountain"
+      LEVEL_SEED: "2033516050"
+      GAMEMODE: "0"
+      DIFFICULTY: "2"
+      ALLOW_CHEATS: "true"
+      MAX_MEMORY: "3G"
+      EULA: "true"
+      GID: "100"
+      UID: "1036"
+    volumes:
+      - minecraft_bedrock_data:/data
+    ports:
+      - "19132:19132/udp"
+      - "19132:19132"
+    networks:
+      homelab:
+        ipv4_address: 192.168.226.104
+    mac_address: 02:42:ac:11:00:03
+    profiles:
+      - gaming
+
+  minecraft-java:
+    image: itzg/minecraft-server:latest
+    tty: true
+    stdin_open: true
+    restart: unless-stopped
+    environment:
+      TYPE: "PAPER"
+      EULA: "true"
+      SERVER_NAME: "FroebCraft-Java-Mountain"
+      SEED: "2033516050"
+      MAX_MEMORY: "3G"
+      VIEW_DISTANCE: "10"
+      GID: "100"
+      UID: "1036"
+    volumes:
+      - minecraft_java_data:/data
+    ports:
+      - "25566:25565"
+    networks:
+      homelab:
+        ipv4_address: 192.168.226.105
+    mac_address: 02:42:ac:11:00:04
+    profiles:
+      - gaming
 
 networks:
   homelab:
-    driver: bridge
+    driver: macvlan
+    driver_opts:
+      parent: eth0
+    ipam:
+      config:
+        - subnet: 192.168.226.0/24
+          gateway: 192.168.226.1
+
+volumes:
+  heimdall-config:
+    name: "heimdall-config"
+    labels:
+      - "service=heimdall"
+  omada-data:
+    name: "omada-data"
+    labels:
+      - "service=omada-controller"
+  omada-logs:
+    name: "omada-logs"
+    labels:
+      - "service=omada-controller"
+  duckdns-config:
+    name: "duckdns-config"
+    labels:
+      - "service=duckdns"
+  minecraft_bedrock_data:
+    name: "minecraft-bedrock-data"
+    labels:
+      - "service=minecraft-bedrock"
+  minecraft_java_data:
+    name: "minecraft-java-data"
+    labels:
+      - "service=minecraft-java"
