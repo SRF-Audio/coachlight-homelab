@@ -29,12 +29,6 @@
         owner: "{{ user }}"
         group: "{{ user }}"
 
-
-    - name: Update all packages
-      apt:
-        update_cache: yes
-        upgrade: 'dist'
-
     - name: Remove conflicting Docker packages
       apt:
         name: "{{ item }}"
@@ -47,6 +41,11 @@
         - containerd
         - runc
       ignore_errors: yes
+
+    - name: Update all packages
+      apt:
+        update_cache: yes
+        upgrade: 'dist'
 
     - name: Install useful packages
       apt:
@@ -66,15 +65,12 @@
         dest: /etc/apt/keyrings/docker.asc
         mode: 'a+r'
 
-    - name: Add Docker repository
-      apt_repository:
-        repo: "deb [arch={{ ansible_architecture }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
-        state: present
-        filename: docker
-
-    - name: Update apt cache after adding Docker repository
-      apt:
-        update_cache: yes
+    - name: Add Docker repository and update apt cache
+      shell: |
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        sudo apt-get update
+      args:
+        executable: /bin/bash
 
     - name: Install Docker packages
       apt:
@@ -121,14 +117,18 @@
         group: "{{ user }}"
 
     - name: Test Docker without sudo
-      command: docker ps
-      become: no  # Run as the user to verify proper Docker permissions
+      shell: |
+        sg docker -c "docker ps"
+      become: no
+      register: docker_test
       failed_when: "'permission denied' in docker_test.stderr"
+      changed_when: false
+
 
     - name: Clone GitHub repository using custom SSH key
       git:
         repo: "git@github.com:SRF-Audio/coachlight-homelab.git"
-        dest: "/home/{{ user }}/coachlight-homelab"
+        dest: "/home/{{ user }}/github"
         key_file: "/home/{{ user }}/.ssh/github-key"
         version: main
 
