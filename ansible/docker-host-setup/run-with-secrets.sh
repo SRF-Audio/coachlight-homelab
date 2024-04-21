@@ -16,7 +16,7 @@ if ! op whoami &>/dev/null; then
     op signin
 fi
 
-export GITHUB_SSH_PRIVATE_KEY=$(op read "op://HomeLab/GitHub SSH Key/private key")
+export GITHUB_SSH_PRIVATE_KEY=$(op read "op://HomeLab/github-ssh/private key")
 export VM_SSH_PUBLIC_KEY=$(op read "op://HomeLab/coachlight-homelab SSH key/public key")
 export VM_PASSWORD=$(op read "op://HomeLab/coachlight-homelab SSH key/user credentials/password")
 

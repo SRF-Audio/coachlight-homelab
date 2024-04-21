@@ -125,15 +125,16 @@
       changed_when: false
 
 
-    - name: Clone GitHub repository using custom SSH key
+    - name: Clone GitHub repository
       git:
-        repo: "git@github.com:SRF-Audio/coachlight-homelab.git"
-        dest: "/home/{{ user }}/github"
-        key_file: "/home/{{ user }}/.ssh/github-key"
+        repo: "https://github.com/SRF-Audio/coachlight-homelab.git"
+        dest: "/home/{{ user }}/coachlight-homelab"
         version: main
+      become: no
 
     - name: Run Docker Compose
       command: docker compose up -d
       args:
         chdir: "/home/{{ user }}/coachlight-homelab"
-      become: no  # Run as the user to leverage the Docker group without sudo
+      become: no 
+
