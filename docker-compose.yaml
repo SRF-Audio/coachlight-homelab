@@ -140,7 +140,7 @@ networks:
   homelab:
     driver: macvlan
     driver_opts:
-      parent: eth0
+      parent: ens18
     ipam:
       config:
         - subnet: 192.168.226.0/24
