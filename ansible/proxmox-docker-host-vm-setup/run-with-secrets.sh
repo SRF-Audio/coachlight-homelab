@@ -34,10 +34,13 @@ fi
 
 # Retrieve playbook secrets and export them
 echo "Retrieving secrets..."
-export PROXMOX_API_TOKEN_SECRET=$(op read "op://HomeLab/ProxMox Server/API Tokens/2cnt647gewnu2urx6di5grvk7e")
+export PROXMOX_API_TOKEN_SECRET=$(op read "op://HomeLab/ProxMox Server/API Tokens/secret")
 export PROXMOX_HOST=$(op read "op://HomeLab/ProxMox Server/macmini1")
 export MAC_ADDRESS=$(op read "op://HomeLab/coachlight-homelab SSH key/docker host vm/mac address")
+export GITHUB_SSH_PRIVATE_KEY=$(op read "op://HomeLab/GitHub SSH Key/private key")
 
-ansible-playbook ./proxmox-docker-host.yml --extra-vars "proxmox_host=$PROXMOX_HOST proxmox_api_token=$PROXMOX_API_TOKEN_SECRET mac_address=$MAC_ADDRESS"
+
+ansible-playbook ./proxmox-docker-host.yml -i ../inventory.yml --extra-vars "proxmox_host=$PROXMOX_HOST proxmox_api_token=$PROXMOX_API_TOKEN_SECRET mac_address=$MAC_ADDRESS
+GIT_SSH_PRIVATE_KEY=$GITHUB_SSH_PRIVATE_KEY preseed_file=$PRESEED_OUTPUT"
 
 rm -rf ./outputs

@@ -1,0 +1,50 @@
+# Run this playbook to create a Debian VM on a Proxmox node and prepare it to be a Docker host.
+# Recommended use is to run ./run-with-secrets.sh
+
+- name: Prepare Debian Docker host VM on Proxmox node
+  hosts: localhost
+  gather_facts: no
+  vars:
+    proxmox_api_token_id: ansible-token
+    proxmox_api_token_secret: "{{ lookup('env', 'PROXMOX_API_TOKEN_SECRET') }}"
+    proxmox_host: "{{ lookup('env', 'PROXMOX_HOST') }}"
+    mac_address: "{{ lookup('env', 'MAC_ADDRESS') }}"
+    user: coachlight-homelab
+    vm_ip: "192.168.226.100"
+  tasks:
+    - name: Create Debian VM
+      community.general.proxmox_kvm:
+        api_user: stephenfroeber@pve
+        api_token_id: "{{ proxmox_api_token_id }}"
+        api_token_secret: "{{ proxmox_api_token_secret }}"
+        api_host: "{{ proxmox_host }}"
+        validate_certs: no
+        node: macmini2
+        vmid: 201
+        name: debian-docker-host
+        sockets: 1
+        cores: 2
+        memory: 6144
+        net: 
+          net0: "virtio,bridge=vmbr0,macaddr={{ mac_address }}"
+        ostype: l26
+        bootdisk: virtio0
+        boot: order=virtio0;ide2;net0
+        tdf: yes
+        localtime: yes
+        agent: yes
+        ide:
+          ide2: "proxmox-backup:iso/debian-12.5.0-amd64-netinst.iso,media=cdrom"
+        scsi: 
+          virtio0: "local-lvm:vm-201-disk-0,cache=writeback,size=100G,ssd=1"
+        state: present
+    - name: Create Debian VM
+      community.general.proxmox_kvm:
+        api_user: stephenfroeber@pve
+        api_token_id: "{{ proxmox_api_token_id }}"
+        api_token_secret: "{{ proxmox_api_token_secret }}"
+        api_host: "{{ proxmox_host }}"
+        name: debian-docker-host
+        node: macmini2
+        state: started
+

@@ -1,0 +1,139 @@
+- name: Complete VM setup and Docker installation
+  hosts: debian_docker_host
+  become: yes
+  vars:
+    user: "{{ hostvars['debian_docker_host']['ansible_user'] }}"
+
+  tasks:
+    - name: Wait for SSH to come up
+      wait_for:
+        port: 22
+        host: '{{ ansible_host }}'
+        timeout: 300
+        delay: 10
+
+
+    - name: Ensure SSH directory exists
+      file:
+        path: "/home/{{ user }}/.ssh"
+        state: directory
+        mode: 0700
+        owner: "{{ user }}"
+        group: "{{ user }}"
+
+    - name: Write SSH public key to file
+      copy:
+        dest: "/home/{{ user }}/.ssh/debian-docker-host.pub"
+        content: "{{ lookup('env', 'VM_SSH_PUBLIC_KEY') }}"
+        mode: 0600
+        owner: "{{ user }}"
+        group: "{{ user }}"
+
+
+    - name: Update all packages
+      apt:
+        update_cache: yes
+        upgrade: 'dist'
+
+    - name: Remove conflicting Docker packages
+      apt:
+        name: "{{ item }}"
+        state: absent
+      loop:
+        - docker.io
+        - docker-doc
+        - docker-compose
+        - podman-docker
+        - containerd
+        - runc
+      ignore_errors: yes
+
+    - name: Install useful packages
+      apt:
+        name: ['ca-certificates', 'curl', 'jq', 'nmap', 'vim', 'wget', 'zip', 'unzip', 'git', 'htop', 'net-tools']
+        state: present
+        update_cache: yes
+
+    - name: Create Docker apt keyring directory
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Add Docker's official GPG key
+      get_url:
+        url: https://download.docker.com/linux/debian/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: 'a+r'
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch={{ ansible_architecture }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
+        state: present
+        filename: docker
+
+    - name: Update apt cache after adding Docker repository
+      apt:
+        update_cache: yes
+
+    - name: Install Docker packages
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - docker-ce
+        - docker-ce-cli
+        - containerd.io
+        - docker-buildx-plugin
+        - docker-compose-plugin
+
+    - name: Test Docker installation
+      command: docker run hello-world
+
+    - name: Ensure user exists and is in the Docker group
+      user:
+        name: "{{ user }}"
+        shell: "/bin/bash"
+        state: present
+        groups: docker
+        append: yes
+
+    - name: Ensure Docker service is running and enabled
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Ensure SSH directory exists
+      file:
+        path: "/home/{{ user }}/.ssh"
+        state: directory
+        mode: 0700
+        owner: "{{ user }}"
+        group: "{{ user }}"
+
+    - name: Write GitHub SSH private key to file
+      copy:
+        dest: "/home/{{ user }}/.ssh/github-key"
+        content: "{{ lookup('env', 'GITHUB_SSH_PRIVATE_KEY') }}"
+        mode: 0600
+        owner: "{{ user }}"
+        group: "{{ user }}"
+
+    - name: Test Docker without sudo
+      command: docker ps
+      become: no  # Run as the user to verify proper Docker permissions
+      failed_when: "'permission denied' in docker_test.stderr"
+
+    - name: Clone GitHub repository using custom SSH key
+      git:
+        repo: "git@github.com:SRF-Audio/coachlight-homelab.git"
+        dest: "/home/{{ user }}/coachlight-homelab"
+        key_file: "/home/{{ user }}/.ssh/github-key"
+        version: main
+
+    - name: Run Docker Compose
+      command: docker compose up -d
+      args:
+        chdir: "/home/{{ user }}/coachlight-homelab"
+      become: no  # Run as the user to leverage the Docker group without sudo
