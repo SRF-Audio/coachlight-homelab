@@ -70,7 +70,7 @@ services:
     network_mode: "service:omada-controller"
     privileged: true
     environment:
-      TS_AUTH_KEY: "your-auth-key-here"
+      TS_AUTH_KEY: "tskey-auth-kuVCguZ3Bc11CNTRL-WYuaF1zJaMVZoo1uwKcpMVLg3dfCzkKR"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - tailscale-state:/var/lib/tailscale
