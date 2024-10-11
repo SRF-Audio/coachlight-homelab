@@ -67,7 +67,6 @@ services:
   tailscale:
     image: tailscale/tailscale:latest
     hostname: omada-controller
-    network_mode: "service:omada-controller"
     privileged: true
     environment:
       TS_AUTH_KEY: "tskey-auth-kuVCguZ3Bc11CNTRL-WYuaF1zJaMVZoo1uwKcpMVLg3dfCzkKR"
