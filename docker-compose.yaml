@@ -19,7 +19,7 @@ services:
 
   omada-controller:
     container_name: omada-controller
-    image: mbentley/omada-controller:5.13
+    image: mbentley/omada-controller:latest
     restart: unless-stopped
     ulimits:
       nofile:
@@ -64,77 +64,18 @@ services:
         ipv4_address: 192.168.226.102
     mac_address: 02:42:ac:11:00:05
 
-  duckdns:
-    image: lscr.io/linuxserver/duckdns:latest
-    container_name: duckdns
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: tailscale
+    network_mode: "service:omada-controller"
+    privileged: true
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=America/Chicago
-      - SUBDOMAINS=srfaudio
-      - TOKEN=d40411ae-f0f6-4029-835d-8fedd66ad91e
-      - UPDATE_IP=ipv4
-      - LOG_FILE=false
+      TS_AUTH_KEY: "your-auth-key-here"
     volumes:
-      - duckdns-config:/config
+      - /var/run/docker.sock:/var/run/docker.sock
+      - tailscale-state:/var/lib/tailscale
+    command: tailscaled
     restart: unless-stopped
-    networks:
-      homelab:
-        ipv4_address: 192.168.226.103
-    mac_address: 02:42:ac:11:00:06
-
-  minecraft-bedrock:
-    image: itzg/minecraft-bedrock-server:latest
-    restart: unless-stopped
-    environment:
-      DEFAULT_PLAYER_PERMISSION_LEVEL: "operator"
-      VERSION: "LATEST"
-      SERVER_PORT: "19132"
-      SERVER_NAME: "FroebCraft-Bedrock-Mountain"
-      LEVEL_SEED: "2033516050"
-      GAMEMODE: "0"
-      DIFFICULTY: "2"
-      ALLOW_CHEATS: "true"
-      MAX_MEMORY: "3G"
-      EULA: "true"
-      GID: "100"
-      UID: "1036"
-    volumes:
-      - minecraft_bedrock_data:/data
-    ports:
-      - "19132:19132/udp"
-      - "19132:19132"
-    networks:
-      homelab:
-        ipv4_address: 192.168.226.104
-    mac_address: 02:42:ac:11:00:03
-    profiles:
-      - gaming
-
-  minecraft-java:
-    image: itzg/minecraft-server:latest
-    tty: true
-    stdin_open: true
-    restart: unless-stopped
-    environment:
-      TYPE: "PAPER"
-      EULA: "true"
-      SERVER_NAME: "FroebCraft-Java-Mountain"
-      SEED: "2033516050"
-      MAX_MEMORY: "3G"
-      VIEW_DISTANCE: "10"
-      GID: "100"
-      UID: "1036"
-    volumes:
-      - minecraft_java_data:/data
-    ports:
-      - "25566:25565"
-    networks:
-      homelab:
-        ipv4_address: 192.168.226.105
-    mac_address: 02:42:ac:11:00:04
-    profiles:
-      - gaming
 
 networks:
   homelab:
@@ -159,15 +100,7 @@ volumes:
     name: "omada-logs"
     labels:
       - "service=omada-controller"
-  duckdns-config:
-    name: "duckdns-config"
+  tailscale-state:
+    name: "tailscale-state"
     labels:
-      - "service=duckdns"
-  minecraft_bedrock_data:
-    name: "minecraft-bedrock-data"
-    labels:
-      - "service=minecraft-bedrock"
-  minecraft_java_data:
-    name: "minecraft-java-data"
-    labels:
-      - "service=minecraft-java"
+      - "service=tailscale"

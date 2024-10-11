@@ -12,7 +12,6 @@
         timeout: 300
         delay: 10
 
-
     - name: Ensure SSH directory exists
       file:
         path: "/home/{{ user }}/.ssh"
@@ -49,7 +48,7 @@
 
     - name: Install useful packages
       apt:
-        name: ['ca-certificates', 'curl', 'jq', 'nmap', 'vim', 'wget', 'zip', 'unzip', 'git', 'htop', 'net-tools']
+        name: ['ca-certificates', 'curl', 'jq', 'nmap', 'vim', 'wget', 'zip', 'unzip', 'git', 'htop', 'net-tools', 'ufw']
         state: present
         update_cache: yes
 
@@ -124,7 +123,6 @@
       failed_when: "'permission denied' in docker_test.stderr"
       changed_when: false
 
-
     - name: Clone GitHub repository
       git:
         repo: "https://github.com/SRF-Audio/coachlight-homelab.git"
@@ -136,5 +134,51 @@
       command: docker compose up -d
       args:
         chdir: "/home/{{ user }}/coachlight-homelab"
-      become: no 
+      become: no
 
+    # Adding Firewall Rules to Open Required Ports for Omada Controller
+    - name: Ensure UFW is installed
+      apt:
+        name: ufw
+        state: present
+        update_cache: yes
+
+    - name: Allow SSH through UFW
+      ufw:
+        rule: allow
+        port: 22
+        proto: tcp
+
+    - name: Allow Omada HTTP port (8088)
+      ufw:
+        rule: allow
+        port: 8088
+        proto: tcp
+
+    - name: Allow Omada HTTPS port (8043)
+      ufw:
+        rule: allow
+        port: 8043
+        proto: tcp
+
+    - name: Allow MongoDB port (27017)
+      ufw:
+        rule: allow
+        port: 27017
+        proto: tcp
+
+    - name: Allow Omada Device Discovery port (29810)
+      ufw:
+        rule: allow
+        port: 29810
+        proto: udp
+
+    - name: Allow Omada Manager/Adoption ports (29811-29816)
+      ufw:
+        rule: allow
+        port: "29811:29816"
+        proto: tcp
+
+    - name: Enable UFW firewall
+      ufw:
+        state: enabled
