@@ -2,9 +2,7 @@ services:
   heimdall:
     image: linuxserver/heimdall
     container_name: heimdall
-    ports:
-      - "80:80"
-      - "443:443"
+    network_mode: "service:tailscale"
     volumes:
       - heimdall-config:/config
     environment:
@@ -14,6 +12,8 @@ services:
     restart: unless-stopped
     networks:
       - homelab
+    depends_on:
+      - tailscale
 
   omada-controller:
     container_name: omada-controller
