@@ -13,9 +13,7 @@ services:
       - TZ=America/Chicago
     restart: unless-stopped
     networks:
-      homelab:
-        ipv4_address: 192.168.226.101
-    mac_address: 02:42:ac:11:00:02
+      - homelab
 
   omada-controller:
     container_name: omada-controller
@@ -59,10 +57,9 @@ services:
       - "29811:29811"
       - "29812:29812"
       - "29813:29813"
-    mac_address: 02:42:ac:11:00:05
-    network_mode: "service:tailscale"
     depends_on:
       - tailscale
+    network_mode: "service:tailscale"
 
   tailscale:
     image: tailscale/tailscale:latest
@@ -79,19 +76,11 @@ services:
       - sys_module
     restart: unless-stopped
     networks:
-      homelab:
-        ipv4_address: 192.168.226.101
-    mac_address: 02:42:ac:11:ad:af
+      - homelab
 
 networks:
   homelab:
-    driver: macvlan
-    driver_opts:
-      parent: ens18
-    ipam:
-      config:
-        - subnet: 192.168.226.0/24
-          gateway: 192.168.226.1
+    driver: bridge
 
 volumes:
   heimdall-config:
