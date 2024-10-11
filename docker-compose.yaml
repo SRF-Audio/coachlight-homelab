@@ -49,14 +49,14 @@ services:
     volumes:
       - omada-data:/opt/tplink/EAPController/data
       - omada-logs:/opt/tplink/EAPController/logs
-    ports:
-      - "8088:8088"
-      - "8043:8043"
-      - "27017:27017"
-      - "29810:29810/udp"
-      - "29811:29811"
-      - "29812:29812"
-      - "29813:29813"
+    # ports:
+    #   - "8088:8088"
+    #   - "8043:8043"
+    #   - "27017:27017"
+    #   - "29810:29810/udp"
+    #   - "29811:29811"
+    #   - "29812:29812"
+    #   - "29813:29813"
     depends_on:
       - tailscale
     network_mode: "service:tailscale"
