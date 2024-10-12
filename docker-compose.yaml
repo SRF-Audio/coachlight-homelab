@@ -1,8 +1,23 @@
 services:
+  heimdall-ts:
+    image: tailscale/tailscale:latest
+    hostname: heimdall
+    privileged: true
+    environment:
+      TS_AUTH_KEY: "tskey-auth-kuVCguZ3Bc11CNTRL-WYuaF1zJaMVZoo1uwKcpMVLg3dfCzkKR"
+      TS_STATE_DIR: "/var/lib/tailscale"
+    volumes:
+      - /dev/net/tun:/dev/net/tun
+      - heimdall-tailscale-state:/var/lib/tailscale
+    cap_add:
+      - net_admin
+      - sys_module
+    restart: unless-stopped
+
   heimdall:
     image: linuxserver/heimdall
     container_name: heimdall
-    network_mode: "service:tailscale"
+    network_mode: "service:heimdall-ts"
     volumes:
       - heimdall-config:/config
     environment:
@@ -11,7 +26,22 @@ services:
       - TZ=America/Chicago
     restart: unless-stopped
     depends_on:
-      - tailscale
+      - heimdall-ts
+
+  omada-ts:
+    image: tailscale/tailscale:latest
+    hostname: omada-controller
+    privileged: true
+    environment:
+      TS_AUTH_KEY: "tskey-auth-kuVCguZ3Bc11CNTRL-WYuaF1zJaMVZoo1uwKcpMVLg3dfCzkKR"
+      TS_STATE_DIR: "/var/lib/tailscale"
+    volumes:
+      - /dev/net/tun:/dev/net/tun
+      - omada-tailscale-state:/var/lib/tailscale
+    cap_add:
+      - net_admin
+      - sys_module
+    restart: unless-stopped
 
   omada-controller:
     container_name: omada-controller
@@ -31,50 +61,13 @@ services:
       MANAGE_HTTPS_PORT: "8043"
       PORTAL_HTTP_PORT: "8088"
       PORTAL_HTTPS_PORT: "8843"
-      PORT_APP_DISCOVERY: "27001"
-      PORT_ADOPT_V1: "29812"
-      PORT_UPGRADE_V1: "29813"
-      PORT_MANAGER_V1: "29811"
-      PORT_MANAGER_V2: "29814"
-      PORT_DISCOVERY: "29810"
-      PORT_TRANSFER_V2: "29815"
-      PORT_RTTY: "29816"
-      SHOW_SERVER_LOGS: "true"
-      SHOW_MONGODB_LOGS: "false"
-      SSL_CERT_NAME: "tls.crt"
-      SSL_KEY_NAME: "tls.key"
       TZ: "America/Chicago"
     volumes:
       - omada-data:/opt/tplink/EAPController/data
       - omada-logs:/opt/tplink/EAPController/logs
-    # ports:
-    #   - "8088:8088"
-    #   - "8043:8043"
-    #   - "27017:27017"
-    #   - "29810:29810/udp"
-    #   - "29811:29811"
-    #   - "29812:29812"
-    #   - "29813:29813"
     depends_on:
-      - tailscale
-    network_mode: "service:tailscale"
-
-  tailscale:
-    image: tailscale/tailscale:latest
-    hostname: omada-controller
-    privileged: true
-    environment:
-      TS_AUTH_KEY: "tskey-auth-kuVCguZ3Bc11CNTRL-WYuaF1zJaMVZoo1uwKcpMVLg3dfCzkKR"
-      TS_STATE_DIR: "/var/lib/tailscale"
-    volumes:
-      - /dev/net/tun:/dev/net/tun
-      - tailscale-state:/var/lib/tailscale
-    cap_add:
-      - net_admin
-      - sys_module
-    restart: unless-stopped
-    networks:
-      - homelab
+      - omada-ts
+    network_mode: "service:omada-ts"
 
 networks:
   homelab:
@@ -93,7 +86,11 @@ volumes:
     name: "omada-logs"
     labels:
       - "service=omada-controller"
-  tailscale-state:
-    name: "tailscale-state"
+  heimdall-tailscale-state:
+    name: "heimdall-tailscale-state"
     labels:
-      - "service=tailscale"
+      - "service=heimdall-ts"
+  omada-tailscale-state:
+    name: "omada-tailscale-state"
+    labels:
+      - "service=omada-ts"
