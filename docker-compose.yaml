@@ -3,8 +3,10 @@ services:
   heimdall-ts:
     image: tailscale/tailscale:latest
     hostname: heimdall
+    networks:
+      - coachlight-homelab
     environment:
-      - TS_AUTHKEY=tskey-client-xxxxxx-example
+      - TS_AUTHKEY="tskey-auth-kuVCguZ3Bc11CNTRL-WYuaF1zJaMVZoo1uwKcpMVLg3dfCzkKR"
       - "TS_EXTRA_ARGS=--advertise-tags=tag:container --reset"
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_SERVE_CONFIG=/config/heimdall.json
@@ -20,7 +22,7 @@ services:
   # Heimdall service
   heimdall:
     image: linuxserver/heimdall
-    network_mode: service:heimdall-ts
+    network_mode: "service:heimdall-ts"
     depends_on:
       - heimdall-ts
     volumes:
@@ -35,8 +37,10 @@ services:
   omada-ts:
     image: tailscale/tailscale:latest
     hostname: omada-controller
+    networks:
+      - coachlight-homelab
     environment:
-      - TS_AUTHKEY=tskey-client-xxxxxx-example
+      - TS_AUTHKEY="tskey-auth-kuVCguZ3Bc11CNTRL-WYuaF1zJaMVZoo1uwKcpMVLg3dfCzkKR"
       - "TS_EXTRA_ARGS=--advertise-routes=192.168.226.0/24"
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_SERVE_CONFIG=/config/omada.json
@@ -49,16 +53,17 @@ services:
       - sys_module
     restart: unless-stopped
 
+  # Omada Controller
   omada-controller:
     container_name: omada-controller
     image: mbentley/omada-controller:latest
-    network_mode: service:omada-ts
+    network_mode: "service:omada-ts"
     depends_on:
       - omada-ts
     volumes:
       - omada-data:/opt/tplink/EAPController/data
       - omada-logs:/opt/tplink/EAPController/logs
-      - $PWD/tailscale-config:/config # Mount config where Tailscale manages the TLS certs
+      - $PWD/tailscale-config:/config
     environment:
       USERNAME: "stephenfroeber"
       PGROUP: "omada"
@@ -80,6 +85,10 @@ services:
       SHOW_MONGODB_LOGS: "false"
       TZ: "America/Chicago"
     restart: unless-stopped
+
+networks:
+  coachlight-homelab:
+    driver: bridge
 
 volumes:
   heimdall-config:
