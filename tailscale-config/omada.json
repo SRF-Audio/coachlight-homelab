@@ -1,0 +1,19 @@
+{
+  "TCP": {
+    "8043": {
+      "HTTPS": true
+    }
+  },
+  "Web": {
+    "omada.rohu-shark.ts.net:8043": {
+      "Handlers": {
+        "/": {
+          "Proxy": "http://127.0.0.1:8088"
+        }
+      }
+    }
+  },
+  "AllowFunnel": {
+    "omada.rohu-shark.ts.net:8043": false
+  }
+}

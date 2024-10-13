@@ -1,23 +1,28 @@
 services:
+  # Tailscale sidecar for Heimdall
   heimdall-ts:
     image: tailscale/tailscale:latest
     hostname: heimdall
-    privileged: true
     environment:
-      TS_AUTH_KEY: "tskey-auth-kuVCguZ3Bc11CNTRL-WYuaF1zJaMVZoo1uwKcpMVLg3dfCzkKR"
-      TS_STATE_DIR: "/var/lib/tailscale"
+      - TS_AUTHKEY=tskey-client-xxxxxx-example
+      - "TS_EXTRA_ARGS=--advertise-tags=tag:container --reset"
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_SERVE_CONFIG=/config/heimdall.json
     volumes:
       - /dev/net/tun:/dev/net/tun
       - heimdall-tailscale-state:/var/lib/tailscale
+      - $PWD/tailscale-config:/config
     cap_add:
       - net_admin
       - sys_module
     restart: unless-stopped
 
+  # Heimdall service
   heimdall:
     image: linuxserver/heimdall
-    container_name: heimdall
-    network_mode: "service:heimdall-ts"
+    network_mode: service:heimdall-ts
+    depends_on:
+      - heimdall-ts
     volumes:
       - heimdall-config:/config
     environment:
@@ -25,19 +30,20 @@ services:
       - PGID=1000
       - TZ=America/Chicago
     restart: unless-stopped
-    depends_on:
-      - heimdall-ts
 
+  # Tailscale sidecar for Omada with subnet routing
   omada-ts:
     image: tailscale/tailscale:latest
     hostname: omada-controller
-    privileged: true
     environment:
-      TS_AUTH_KEY: "tskey-auth-kuVCguZ3Bc11CNTRL-WYuaF1zJaMVZoo1uwKcpMVLg3dfCzkKR"
-      TS_STATE_DIR: "/var/lib/tailscale"
+      - TS_AUTHKEY=tskey-client-xxxxxx-example
+      - "TS_EXTRA_ARGS=--advertise-routes=192.168.226.0/24"
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_SERVE_CONFIG=/config/omada.json
     volumes:
       - /dev/net/tun:/dev/net/tun
       - omada-tailscale-state:/var/lib/tailscale
+      - $PWD/tailscale-config:/config
     cap_add:
       - net_admin
       - sys_module
@@ -46,12 +52,13 @@ services:
   omada-controller:
     container_name: omada-controller
     image: mbentley/omada-controller:latest
-    restart: unless-stopped
-    ulimits:
-      nofile:
-        soft: 4096
-        hard: 8192
-    stop_grace_period: 60s
+    network_mode: service:omada-ts
+    depends_on:
+      - omada-ts
+    volumes:
+      - omada-data:/opt/tplink/EAPController/data
+      - omada-logs:/opt/tplink/EAPController/logs
+      - $PWD/tailscale-config:/config # Mount config where Tailscale manages the TLS certs
     environment:
       USERNAME: "stephenfroeber"
       PGROUP: "omada"
@@ -61,36 +68,27 @@ services:
       MANAGE_HTTPS_PORT: "8043"
       PORTAL_HTTP_PORT: "8088"
       PORTAL_HTTPS_PORT: "8843"
+      PORT_APP_DISCOVERY: "27001"
+      PORT_ADOPT_V1: "29812"
+      PORT_UPGRADE_V1: "29813"
+      PORT_MANAGER_V1: "29811"
+      PORT_MANAGER_V2: "29814"
+      PORT_DISCOVERY: "29810"
+      PORT_TRANSFER_V2: "29815"
+      PORT_RTTY: "29816"
+      SHOW_SERVER_LOGS: "true"
+      SHOW_MONGODB_LOGS: "false"
       TZ: "America/Chicago"
-    volumes:
-      - omada-data:/opt/tplink/EAPController/data
-      - omada-logs:/opt/tplink/EAPController/logs
-    depends_on:
-      - omada-ts
-    network_mode: "service:omada-ts"
-
-networks:
-  homelab:
-    driver: bridge
+    restart: unless-stopped
 
 volumes:
   heimdall-config:
-    name: "heimdall-config"
-    labels:
-      - "service=heimdall"
+    driver: local
   omada-data:
-    name: "omada-data"
-    labels:
-      - "service=omada-controller"
+    driver: local
   omada-logs:
-    name: "omada-logs"
-    labels:
-      - "service=omada-controller"
+    driver: local
   heimdall-tailscale-state:
-    name: "heimdall-tailscale-state"
-    labels:
-      - "service=heimdall-ts"
+    driver: local
   omada-tailscale-state:
-    name: "omada-tailscale-state"
-    labels:
-      - "service=omada-ts"
+    driver: local
