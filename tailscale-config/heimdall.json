@@ -5,7 +5,7 @@
     }
   },
   "Web": {
-    "heimdall.rohu-shark.ts.net:443": {
+    "${TS_CERT_DOMAIN}:443": {
       "Handlers": {
         "/": {
           "Proxy": "http://127.0.0.1:80"
@@ -14,6 +14,6 @@
     }
   },
   "AllowFunnel": {
-    "heimdall.rohu-shark.ts.net:443": false
+    "${TS_CERT_DOMAIN}:443": false
   }
 }
