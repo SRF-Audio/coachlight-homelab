@@ -4,16 +4,17 @@ services:
     image: tailscale/tailscale:latest
     hostname: heimdall
     networks:
-      - coachlight-homelab
+      homelab:
+        ipv4_address: 192.168.226.101
+        mac_address: 02:42:ac:11:00:04
     environment:
-      - TS_AUTHKEY="tskey-auth-kuVCguZ3Bc11CNTRL-WYuaF1zJaMVZoo1uwKcpMVLg3dfCzkKR"
-      - "TS_EXTRA_ARGS=--advertise-tags=tag:container --reset"
-      - TS_STATE_DIR=/var/lib/tailscale
-      - TS_SERVE_CONFIG=/config/heimdall.json
+      TS_AUTHKEY: tskey-auth-kuVCguZ3Bc11CNTRL-WYuaF1zJaMVZoo1uwKcpMVLg3dfCzkKR
+      TS_STATE_DIR: "/var/lib/tailscale"
+      TS_SERVE_CONFIG: "/config/heimdall.json"
     volumes:
-      - /dev/net/tun:/dev/net/tun
-      - heimdall-tailscale-state:/var/lib/tailscale
-      - $PWD/tailscale-config:/config
+      - "/dev/net/tun:/dev/net/tun"
+      - "heimdall-tailscale-state:/var/lib/tailscale"
+      - "$PWD/tailscale-config:/config"
     cap_add:
       - net_admin
       - sys_module
@@ -22,48 +23,45 @@ services:
   # Heimdall service
   heimdall:
     image: linuxserver/heimdall
-    network_mode: "service:heimdall-ts"
+    network_mode: service:heimdall-ts
     depends_on:
       - heimdall-ts
     volumes:
-      - heimdall-config:/config
+      - "$PWD/tailscale-config:/config"
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=America/Chicago
     restart: unless-stopped
 
-  # Tailscale sidecar for Omada with subnet routing
   omada-ts:
     image: tailscale/tailscale:latest
     hostname: omada-controller
     networks:
-      - coachlight-homelab
+      homelab:
+        ipv4_address: 192.168.226.102
+        mac_address: 02:42:ac:11:00:05
     environment:
-      - TS_AUTHKEY="tskey-auth-kuVCguZ3Bc11CNTRL-WYuaF1zJaMVZoo1uwKcpMVLg3dfCzkKR"
-      - "TS_EXTRA_ARGS=--advertise-routes=192.168.226.0/24"
-      - TS_STATE_DIR=/var/lib/tailscale
-      - TS_SERVE_CONFIG=/config/omada.json
+      TS_AUTHKEY: tskey-auth-kuVCguZ3Bc11CNTRL-WYuaF1zJaMVZoo1uwKcpMVLg3dfCzkKR
+      TS_EXTRA_ARGS: "--advertise-routes=192.168.226.0/24"
+      TS_STATE_DIR: "/var/lib/tailscale"
+      TS_SERVE_CONFIG: "/config/omada.json"
     volumes:
-      - /dev/net/tun:/dev/net/tun
-      - omada-tailscale-state:/var/lib/tailscale
-      - $PWD/tailscale-config:/config
+      - "/dev/net/tun:/dev/net/tun"
+      - "omada-tailscale-state:/var/lib/tailscale"
+      - "$PWD/tailscale-config:/config"
     cap_add:
       - net_admin
       - sys_module
     restart: unless-stopped
 
-  # Omada Controller
   omada-controller:
-    container_name: omada-controller
     image: mbentley/omada-controller:latest
-    network_mode: "service:omada-ts"
-    depends_on:
-      - omada-ts
     volumes:
-      - omada-data:/opt/tplink/EAPController/data
-      - omada-logs:/opt/tplink/EAPController/logs
-      - $PWD/tailscale-config:/config/omada.json
+      - "omada-data:/opt/tplink/EAPController/data"
+      - "omada-logs:/opt/tplink/EAPController/logs"
+      - "$PWD/tailscale-config:/config"
+    network_mode: "service:omada-ts"
     environment:
       USERNAME: "stephenfroeber"
       PGROUP: "omada"
@@ -87,12 +85,16 @@ services:
     restart: unless-stopped
 
 networks:
-  coachlight-homelab:
-    driver: bridge
+  homelab:
+    driver: macvlan
+    driver_opts:
+      parent: ens18
+    ipam:
+      config:
+        - subnet: 192.168.226.0/24
+          gateway: 192.168.226.1
 
 volumes:
-  heimdall-config:
-    driver: local
   omada-data:
     driver: local
   omada-logs:
