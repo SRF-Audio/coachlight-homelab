@@ -9,7 +9,6 @@ services:
         mac_address: 02:42:ac:11:00:04
     environment:
       TS_AUTHKEY: tskey-auth-kuVCguZ3Bc11CNTRL-WYuaF1zJaMVZoo1uwKcpMVLg3dfCzkKR
-      TS_EXTRA_ARGS: "--advertise-tags=tag:container --reset"
       TS_STATE_DIR: "/var/lib/tailscale"
       TS_SERVE_CONFIG: "/config/heimdall.json"
     volumes:
