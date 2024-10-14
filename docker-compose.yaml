@@ -58,7 +58,7 @@ services:
     volumes:
       - omada-data:/opt/tplink/EAPController/data
       - omada-logs:/opt/tplink/EAPController/logs
-      - $PWD/tailscale-config:/config # Mount config where Tailscale manages the TLS certs
+      - $PWD/tailscale-config:/config/omada.json
     environment:
       USERNAME: "stephenfroeber"
       PGROUP: "omada"
