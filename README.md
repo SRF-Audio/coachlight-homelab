@@ -17,6 +17,24 @@ To get Synology setup on TailScale with https:
 - `sudo cp ~/srfaudio.rohu-shark.ts.net.key /usr/syno/etc/certificate/system/default/privkey.pem`
 - Reboot Synology
 
+#### Home Assistant OS
+
+To get Tailscale to always run in HAOS:
+- `curl -fsSL https://tailscale.com/install.sh | sh` (It will fail on `rc-update`)
+- `sudo tailscaled &`
+- `sudo nano /usr/local/bin/start-tailscale.sh` and paste the following:
+```
+#!/bin/sh
+/usr/sbin/tailscaled &
+sleep 5
+/usr/sbin/tailscale up --authkey <YOUR_AUTH_KEY>
+```
+- `sudo chmod +x /usr/local/bin/start-tailscale.sh`
+- `sudo crontab -e` and add `@reboot /usr/local/bin/start-tailscale.sh`
+- `tailscale up`
+
+
+
 ### Prerequisites
 
 #### 1Password
