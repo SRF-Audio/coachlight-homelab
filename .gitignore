@@ -1,3 +1,8 @@
+debian-docker-host-vm.rohu-shark.ts.net.crt
+debian-docker-host-vm.rohu-shark.ts.net.key
+tailscale-config/
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
