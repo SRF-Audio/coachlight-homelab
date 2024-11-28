@@ -182,3 +182,45 @@
     - name: Enable UFW firewall
       ufw:
         state: enabled
+
+    # VNC Server Installation and Configuration
+    - name: Install TigerVNC server
+      apt:
+        name: tigervnc-standalone-server
+        state: present
+        update_cache: yes
+
+    - name: Create VNC systemd service file
+      copy:
+        dest: "/etc/systemd/system/vncserver@.service"
+        content: |
+          [Unit]
+          Description=VNC Server for %i
+          After=network.target
+
+          [Service]
+          Type=forking
+          User={{ user }}
+          PAMName=login
+          PIDFile=/home/{{ user }}/.vnc/%H%i.pid
+          ExecStart=/usr/bin/vncserver :1 -geometry 1920x1080 -depth 24
+          ExecStop=/usr/bin/vncserver -kill :1
+
+          [Install]
+          WantedBy=multi-user.target
+      mode: "0644"
+
+    - name: Reload systemd to apply VNC service
+      command: systemctl daemon-reload
+
+    - name: Enable VNC server to start at boot
+      systemd:
+        name: vncserver@1
+        enabled: yes
+        state: started
+
+    - name: Allow VNC port (5901) through UFW
+      ufw:
+        rule: allow
+        port: 5901
+        proto: tcp
