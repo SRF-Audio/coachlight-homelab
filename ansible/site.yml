@@ -1,0 +1,97 @@
+- name: Coachlight HomeLab Manager
+  hosts: all
+  gather_facts: true
+
+  pre_tasks:
+    - name: Check if 1password CLI is installed
+      ansible.builtin.command: op --version
+      register: op_installed
+      failed_when: op_installed.rc != 0
+      changed_when: false
+      delegate_to: localhost
+      when: "'local' in group_names"
+
+    - name: Inject secrets for proxmox group
+      ansible.builtin.command: >
+        op inject -i group_vars/proxmox/vault.yml.tpl -o group_vars/proxmox/vault.yml
+      delegate_to: localhost
+      args:
+        creates: group_vars/proxmox/vault.yml
+      changed_when: false
+      when: "'local' in group_names"
+
+    - name: Inject secrets for vms group
+      ansible.builtin.command: >
+        op inject -i group_vars/vms/vault.yml.tpl -o group_vars/vms/vault.yml
+      delegate_to: localhost
+      args:
+        creates: group_vars/vms/vault.yml
+      changed_when: false
+      when: "'local' in group_names"
+
+    - name: Inject secrets for nas group
+      ansible.builtin.command: >
+        op inject -i group_vars/nas/vault.yml.tpl -o group_vars/nas/vault.yml
+      delegate_to: localhost
+      args:
+        creates: group_vars/nas/vault.yml
+      changed_when: false
+      when: "'local' in group_names"
+
+    - name: Check if Tailscale is installed on Ansible host
+      ansible.builtin.command: tailscale version
+      register: tailscale_installed
+      failed_when: tailscale_installed.rc != 0
+      delegate_to: localhost
+      changed_when: false
+
+    - name: Ensure Tailscale is running on Ansible host
+      ansible.builtin.command: tailscale up
+      become: true
+      when: tailscale_installed.rc == 0
+      delegate_to: localhost
+      register: tailscale_up
+      changed_when: tailscale_up.rc == 0
+      failed_when: tailscale_up.rc != 0
+    - name: Wait for Tailscale to be connected
+      ansible.builtin.command: tailscale status
+      register: tailscale_status
+      until: tailscale_status.rc == 0 and ('stopped' not in tailscale_status.stdout)
+      retries: 5
+      delay: 5
+      changed_when: false
+      failed_when: tailscale_status.rc != 0 or 'stopped' in tailscale_status.stdout
+      when: "'nas' not in group_names"
+    - name: Ensure User is in sudoers group
+      ansible.builtin.user:
+        name: "{{ ansible_user }}"
+        groups: sudo
+        append: true
+        state: present
+      become: true
+      when: "'nas' not in group_names"
+    - name: Update Tailscale
+      ansible.builtin.command: tailscale update
+      become: true
+      when: "'nas' not in group_names"
+      register: tailscale_update
+      changed_when: tailscale_update.rc == 0
+      failed_when: tailscale_update.rc != 0
+    - name: Wait for Tailscale to be connected on Synology NAS
+      ansible.builtin.command: /usr/local/bin/tailscale status
+      register: tailscale_status
+      until: tailscale_status.rc == 0 and ('stopped' not in tailscale_status.stdout)
+      retries: 5
+      delay: 5
+      changed_when: false
+      failed_when: tailscale_status.rc != 0 or 'stopped' in tailscale_status.stdout
+      when: "'nas' in group_names"
+    - name: Update Tailscale on Synology NAS
+      ansible.builtin.command: /usr/local/bin/tailscale update
+      become: true
+      when: "'nas' in group_names"
+      register: tailscale_update
+      changed_when: tailscale_update.rc == 0
+      failed_when: tailscale_update.rc != 0
+
+  tasks:

@@ -1,35 +1,28 @@
 all:
+  vars:
+    ansible_ssh_private_key_file: ~/.ssh/coachlight-homelab
   children:
+    local:
+      hosts:
+        localhost:
+          ansible_connection: local
     proxmox:
       hosts:
-        proxmox_server:
-          ansible_host: 192.168.226.88
-          ansible_port: 8006
-          ansible_user: stephenfroeber@pve
+        macmini1:
+          ansible_host: macmini1.rohu-shark.ts.net
+          ansible_user: stephenfroeber
+        macmini2:
+          ansible_host: macmini2.rohu-shark.ts.net
+          ansible_user: stephenfroeber
 
-    synology:
+    nas:
       hosts:
         synology_nas:
-          ansible_host: 192.168.226.6
-          ansible_port: 9654
+          ansible_host: srfaudio.rohu-shark.ts.net
           ansible_user: stephenfroeber
-          ansible_ssh_private_key_file: /path/to/your/key
 
     vms:
       hosts:
         debian_docker_host:
-          ansible_host: 192.168.226.100
-          ansible_user: coachlight-homelab
-          ansible_ssh_pass: "{{ lookup('env', 'VM_PASSWORD') }}"
-          ansible_become_pass: "{{ lookup('env', 'VM_PASSWORD') }}"
-
-    docker_services:
-      hosts:
-        # As you assign static IPs to your Docker services, add them here
-        docker_service1:
-          ansible_host: 192.168.226.101
-          ansible_user: root
-          ansible_ssh_private_key_file: /path/to/your/key
-
-  vars:
-    ansible_python_interpreter: /usr/bin/python3
+          ansible_host: debian-docker-host-vm.rohu-shark.ts.net
+          ansible_user: sfroeber

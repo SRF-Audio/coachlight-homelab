@@ -1,55 +1,63 @@
 services:
-  # Tailscale sidecar for Heimdall
-  heimdall-ts:
+  #############################################################################
+  # 1) HomePage
+  #############################################################################
+  homepage-ts:
     image: tailscale/tailscale:latest
-    hostname: heimdall
+    container_name: homepage-ts
+    hostname: homepage
     networks:
       homelab:
         ipv4_address: 192.168.226.101
         mac_address: 02:42:ac:11:00:04
     environment:
-      TS_AUTHKEY: tskey-auth-kuVCguZ3Bc11CNTRL-WYuaF1zJaMVZoo1uwKcpMVLg3dfCzkKR
+      TS_AUTHKEY: "tskey-auth-kuVCguZ3Bc11CNTRL-WYuaF1zJaMVZoo1uwKcpMVLg3dfCzkKR"
       TS_STATE_DIR: "/var/lib/tailscale"
-      TS_SERVE_CONFIG: "/config/heimdall.json"
+      TS_SERVE_CONFIG: "/config/homepage.json"
     volumes:
       - "/dev/net/tun:/dev/net/tun"
-      - "heimdall-tailscale-state:/var/lib/tailscale"
-      - "$PWD/tailscale-config:/config"
+      # Tailscale's ephemeral/key data
+      - "/mnt/m2-ssd-pool/apps/homepage/tailscale-state:/var/lib/tailscale"
+      # Tailscale serve config JSON, if you want to store it on the host
+      - "/mnt/m2-ssd-pool/apps/homepage/tailscale-config:/config"
     cap_add:
       - net_admin
       - sys_module
     restart: unless-stopped
 
-  # Heimdall service
-  heimdall:
-    image: linuxserver/heimdall
-    network_mode: service:heimdall-ts
+  homepage:
+    image: ghcr.io/benphelps/homepage:latest
+    container_name: homepage
+    network_mode: "service:homepage-ts"
     depends_on:
-      - heimdall-ts
+      - homepage-ts
+    # HomePage config stored on the host
     volumes:
-      - "$PWD/tailscale-config:/config"
+      - "/mnt/m2-ssd-pool/apps/homepage/config:/app/config"
     environment:
-      - PUID=1000
-      - PGID=1000
       - TZ=America/Chicago
     restart: unless-stopped
 
+  #############################################################################
+  # 2) Omada Controller
+  #############################################################################
   omada-ts:
     image: tailscale/tailscale:latest
+    container_name: omada-ts
     hostname: omada-controller
     networks:
       homelab:
         ipv4_address: 192.168.226.102
         mac_address: 02:42:ac:11:00:05
     environment:
-      TS_AUTHKEY: tskey-auth-kuVCguZ3Bc11CNTRL-WYuaF1zJaMVZoo1uwKcpMVLg3dfCzkKR
+      TS_AUTHKEY: "tskey-auth-kuVCguZ3Bc11CNTRL-WYuaF1zJaMVZoo1uwKcpMVLg3dfCzkKR"
       TS_EXTRA_ARGS: "--advertise-routes=192.168.226.0/24"
       TS_STATE_DIR: "/var/lib/tailscale"
       TS_SERVE_CONFIG: "/config/omada.json"
     volumes:
       - "/dev/net/tun:/dev/net/tun"
-      - "omada-tailscale-state:/var/lib/tailscale"
-      - "$PWD/tailscale-config:/config"
+      - "/mnt/m2-ssd-pool/apps/omada/tailscale-state:/var/lib/tailscale"
+      - "/mnt/m2-ssd-pool/apps/omada/tailscale-config:/config"
     cap_add:
       - net_admin
       - sys_module
@@ -57,11 +65,15 @@ services:
 
   omada-controller:
     image: mbentley/omada-controller:latest
-    volumes:
-      - "omada-data:/opt/tplink/EAPController/data"
-      - "omada-logs:/opt/tplink/EAPController/logs"
-      - "$PWD/tailscale-config:/config"
+    container_name: omada-controller
     network_mode: "service:omada-ts"
+    depends_on:
+      - omada-ts
+    volumes:
+      # Omada data & logs on host
+      - "/mnt/m2-ssd-pool/apps/omada/data:/opt/tplink/EAPController/data"
+      - "/mnt/m2-ssd-pool/apps/omada/logs:/opt/tplink/EAPController/logs"
+      - "/mnt/m2-ssd-pool/apps/omada/tailscale-config:/config"
     environment:
       USERNAME: "stephenfroeber"
       PGROUP: "omada"
@@ -84,22 +96,84 @@ services:
       TZ: "America/Chicago"
     restart: unless-stopped
 
+  #############################################################################
+  # 3) Nextcloud
+  #############################################################################
+  nextcloud-ts:
+    image: tailscale/tailscale:latest
+    container_name: nextcloud-ts
+    hostname: nextcloud
+    networks:
+      homelab:
+        ipv4_address: 192.168.226.103
+        mac_address: 02:42:ac:11:00:06
+    environment:
+      TS_AUTHKEY: "tskey-auth-kuVCguZ3Bc11CNTRL-WYuaF1zJaMVZoo1uwKcpMVLg3dfCzkKR"
+      TS_STATE_DIR: "/var/lib/tailscale"
+    volumes:
+      - "/dev/net/tun:/dev/net/tun"
+      - "/mnt/m2-ssd-pool/apps/nextcloud/tailscale-state:/var/lib/tailscale"
+      - "/mnt/m2-ssd-pool/apps/nextcloud/tailscale-config:/config"
+    cap_add:
+      - net_admin
+      - sys_module
+    restart: unless-stopped
+
+  nextcloud:
+    image: nextcloud:latest
+    container_name: nextcloud
+    network_mode: "service:nextcloud-ts"
+    depends_on:
+      - nextcloud-ts
+    volumes:
+      - "/mnt/m2-ssd-pool/apps/nextcloud/data:/var/www/html"
+    environment:
+      - TZ=America/Chicago
+    restart: unless-stopped
+
+  #############################################################################
+  # 4) AdGuard (New)
+  #############################################################################
+  adguard-ts:
+    image: tailscale/tailscale:latest
+    container_name: adguard-ts
+    hostname: adguard
+    networks:
+      homelab:
+        ipv4_address: 192.168.226.104
+        mac_address: 02:42:ac:11:00:07
+    environment:
+      TS_AUTHKEY: "tskey-auth-kuVCguZ3Bc11CNTRL-WYuaF1zJaMVZoo1uwKcpMVLg3dfCzkKR"
+      TS_STATE_DIR: "/var/lib/tailscale"
+      TS_SERVE_CONFIG: "/config/adguard.json"
+    volumes:
+      - "/dev/net/tun:/dev/net/tun"
+      - "/mnt/m2-ssd-pool/apps/adguard/tailscale-state:/var/lib/tailscale"
+      - "/mnt/m2-ssd-pool/apps/adguard/tailscale-config:/config"
+    cap_add:
+      - net_admin
+      - sys_module
+    restart: unless-stopped
+
+  adguard:
+    image: adguard/adguardhome:latest
+    container_name: adguard
+    network_mode: "service:adguard-ts"
+    depends_on:
+      - adguard-ts
+    volumes:
+      - "/mnt/m2-ssd-pool/apps/adguard/conf:/opt/adguardhome/conf"
+      - "/mnt/m2-ssd-pool/apps/adguard/work:/opt/adguardhome/work"
+    environment:
+      - TZ=America/Chicago
+    restart: unless-stopped
+
 networks:
   homelab:
     driver: macvlan
     driver_opts:
-      parent: ens18
+      parent: enp6s0f1
     ipam:
       config:
-        - subnet: 192.168.226.0/24
+        - subnet: 192.168.226.0/23
           gateway: 192.168.226.1
-
-volumes:
-  omada-data:
-    driver: local
-  omada-logs:
-    driver: local
-  heimdall-tailscale-state:
-    driver: local
-  omada-tailscale-state:
-    driver: local

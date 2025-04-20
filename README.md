@@ -7,6 +7,16 @@ Repo for all of my homelab configurations
 
 The whole homelab will be setup using [TailScale](https://tailscale.com).
 
+#### ProxMox
+
+The first time you run the Playbook against ProxMox, you may run into ssh not working for the nodes.
+
+Do the following:
+- ssh login to the node as `root`
+- `sudo adduser stephenfroeber`
+- Fill in the same password as the Web UI
+- `ssh-copy-id -i ~/.ssh/coachlight-homelab.pub stephenfroeber@<node name>.rohu-shark.ts.net`
+
 #### Synology
 
 To get Synology setup on TailScale with https:

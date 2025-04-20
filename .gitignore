@@ -1,7 +1,10 @@
 debian-docker-host-vm.rohu-shark.ts.net.crt
 debian-docker-host-vm.rohu-shark.ts.net.key
-tailscale-config/
 
+.ansible
+ansible/group_vars/nas/vault.yml
+ansible/group_vars/proxmox/vault.yml
+ansible/group_vars/vms/vault.yml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
