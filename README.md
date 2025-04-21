@@ -58,3 +58,14 @@ Example:
 
 
 #### Synology
+
+
+NOTES:
+- Don't install Tailscale into the template. It produces duplicate hostname keys in Tailscale. Stop when the VM's have been created.
+- Disable firewall in Fedora for Tailscale:
+```
+sudo firewall-cmd --permanent --zone=trusted --add-interface=tailscale0
+sudo firewall-cmd --reload
+```
+- Rename k8s cluster
+- permanently add kubeconfg
