@@ -1,0 +1,31 @@
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Upgrade all packages (dist-upgrade)
+  ansible.builtin.apt:
+    upgrade: dist
+    autoremove: true
+
+- name: Check if a reboot is required
+  ansible.builtin.stat:
+    path: /var/run/reboot-required
+  register: reboot_required
+
+- name: Reboot if required
+  ansible.builtin.reboot:
+    msg: "Reboot triggered by Ansible due to system update"
+    connect_timeout: 5
+    reboot_timeout: 600
+  when: reboot_required.stat.exists
+
+- name: Wait for SSH to return after reboot
+  ansible.builtin.wait_for_connection:
+    delay: 5
+    timeout: 300
+  when: reboot_required.stat.exists
+  register: wait_for_connection
+  until: wait_for_connection is not failed
+  retries: 5
+  delay: 5

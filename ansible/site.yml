@@ -48,11 +48,12 @@
     - name: Ensure Tailscale is running on Ansible host
       ansible.builtin.command: tailscale up
       become: true
-      when: tailscale_installed.rc == 0
+      when: "tailscale_installed.rc == 0 and 'local' in group_names"
       delegate_to: localhost
       register: tailscale_up
       changed_when: tailscale_up.rc == 0
       failed_when: tailscale_up.rc != 0
+
     - name: Wait for Tailscale to be connected
       ansible.builtin.command: tailscale status
       register: tailscale_status
@@ -62,21 +63,7 @@
       changed_when: false
       failed_when: tailscale_status.rc != 0 or 'stopped' in tailscale_status.stdout
       when: "'nas' not in group_names"
-    - name: Ensure User is in sudoers group
-      ansible.builtin.user:
-        name: "{{ ansible_user }}"
-        groups: sudo
-        append: true
-        state: present
-      become: true
-      when: "'nas' not in group_names"
-    - name: Update Tailscale
-      ansible.builtin.command: tailscale update
-      become: true
-      when: "'nas' not in group_names"
-      register: tailscale_update
-      changed_when: tailscale_update.rc == 0
-      failed_when: tailscale_update.rc != 0
+
     - name: Wait for Tailscale to be connected on Synology NAS
       ansible.builtin.command: /usr/local/bin/tailscale status
       register: tailscale_status
@@ -86,12 +73,10 @@
       changed_when: false
       failed_when: tailscale_status.rc != 0 or 'stopped' in tailscale_status.stdout
       when: "'nas' in group_names"
-    - name: Update Tailscale on Synology NAS
-      ansible.builtin.command: /usr/local/bin/tailscale update
-      become: true
-      when: "'nas' in group_names"
-      register: tailscale_update
-      changed_when: tailscale_update.rc == 0
-      failed_when: tailscale_update.rc != 0
 
-  tasks:
+- name: Debian Maintenance (Proxmox + VMs)
+  hosts: proxmox:vms
+  gather_facts: true
+  become: true
+  roles:
+    - debian_mx

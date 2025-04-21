@@ -1,0 +1,8 @@
+- name: Ensure this is a Debian-based system
+  ansible.builtin.assert:
+    that: ansible_os_family == "Debian"
+    fail_msg: "This role only supports Debian-based systems."
+
+- name: Include apt_updates.yml
+  ansible.builtin.include_tasks:
+    file: apt_updates.yml
