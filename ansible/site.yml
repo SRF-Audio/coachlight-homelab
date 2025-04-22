@@ -1,5 +1,5 @@
-- name: Coachlight HomeLab Manager
-  hosts: all
+- name: Local Host Preparation
+  hosts: local
   gather_facts: true
 
   pre_tasks:
@@ -9,7 +9,6 @@
       failed_when: op_installed.rc != 0
       changed_when: false
       delegate_to: localhost
-      when: "'local' in group_names"
 
     - name: Inject secrets for proxmox group
       ansible.builtin.command: >
@@ -17,8 +16,9 @@
       delegate_to: localhost
       args:
         creates: group_vars/proxmox/vault.yml
-      changed_when: false
-      when: "'local' in group_names"
+      register: proxmox_inject
+      changed_when: proxmox_inject.rc == 0 and proxmox_inject.stdout != ""
+      failed_when: proxmox_inject.rc != 0
 
     - name: Inject secrets for vms group
       ansible.builtin.command: >
@@ -26,8 +26,9 @@
       delegate_to: localhost
       args:
         creates: group_vars/vms/vault.yml
-      changed_when: false
-      when: "'local' in group_names"
+      register: vms_inject
+      changed_when: vms_inject.rc == 0 and vms_inject.stdout != ""
+      failed_when: vms_inject.rc != 0
 
     - name: Inject secrets for nas group
       ansible.builtin.command: >
@@ -35,24 +36,15 @@
       delegate_to: localhost
       args:
         creates: group_vars/nas/vault.yml
-      changed_when: false
-      when: "'local' in group_names"
+      register: nas_inject
+      changed_when: nas_inject.rc == 0 and nas_inject.stdout != ""
+      failed_when: nas_inject.rc != 0
 
-    - name: Check if Tailscale is installed on Ansible host
-      ansible.builtin.command: tailscale version
-      register: tailscale_installed
-      failed_when: tailscale_installed.rc != 0
-      delegate_to: localhost
+    - name: Check if Tailscale is installed on Ansible host by calling tailscale status
+      ansible.builtin.command: tailscale status
+      register: tailscale_status
       changed_when: false
-
-    - name: Ensure Tailscale is running on Ansible host
-      ansible.builtin.command: tailscale up
-      become: true
-      when: "tailscale_installed.rc == 0 and 'local' in group_names"
-      delegate_to: localhost
-      register: tailscale_up
-      changed_when: tailscale_up.rc == 0
-      failed_when: tailscale_up.rc != 0
+      failed_when: tailscale_status.rc != 0
 
     - name: Wait for Tailscale to be connected
       ansible.builtin.command: tailscale status
@@ -74,9 +66,10 @@
       failed_when: tailscale_status.rc != 0 or 'stopped' in tailscale_status.stdout
       when: "'nas' in group_names"
 
-- name: Debian Maintenance (Proxmox + VMs)
-  hosts: proxmox:vms
+- name: ProxMox MX
+  hosts: proxmox
   gather_facts: true
-  become: true
   roles:
-    - debian_mx
+    - proxmox_mx
+  vars:
+    proxmox_user: stephenfroeber

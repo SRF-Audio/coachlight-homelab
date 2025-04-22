@@ -1,0 +1,21 @@
+- name: Ensure Tailscale cert renewal script is installed
+  ansible.builtin.copy:
+    dest: /usr/local/bin/renew-tailscale-cert
+    content: |
+      #!/bin/bash
+      NAME="$(tailscale status --json | jq '.Self.DNSName | .[:-1]' -r)"
+      tailscale cert "${NAME}"
+      pvenode cert set "${NAME}.crt" "${NAME}.key" --force --restart
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+
+- name: Add cron job for Tailscale cert renewal
+  ansible.builtin.cron:
+    name: "Renew Tailscale TLS cert"
+    job: "/usr/local/bin/renew-tailscale-cert"
+    user: root
+    minute: 0
+    hour: 5
+  become: true
